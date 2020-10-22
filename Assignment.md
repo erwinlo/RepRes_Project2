@@ -40,8 +40,33 @@ data <-
           na.strings = "",
           nrows = 368797
      )
-data <- select(data, EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)
+data <- select(data, EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP)
 ```
+
+Next we need to adjust the numbers in variables PROPDMG and CROPDMG using exponents in PROPDMGEXP and CROPDMGEXP
+
+```r
+# convert all letters to numbers
+data$PROPDMGEXP[grep("-|\\?|\\+",data$PROPDMGEXP)] <- 0
+data$PROPDMGEXP[grep("[hH]",data$PROPDMGEXP)] <- 2
+data$PROPDMGEXP[grep("[kK]",data$PROPDMGEXP)] <- 3
+data$PROPDMGEXP[grep("[mM]",data$PROPDMGEXP)] <- 6
+data$PROPDMGEXP[grep("[bB]",data$PROPDMGEXP)] <- 9
+data$PROPDMGEXP <- as.numeric(data$PROPDMGEXP)
+# multiply PROPDMG by exponents in PROPDMGEXP
+data$PROPDMG <- data$PROPDMG * (10 ^ data$PROPDMGEXP)
+
+# convert all letters to numbers
+data$CROPDMGEXP[grep("-|\\?|\\+",data$CROPDMGEXP)] <- 0
+data$CROPDMGEXP[grep("[hH]",data$CROPDMGEXP)] <- 2
+data$CROPDMGEXP[grep("[kK]",data$CROPDMGEXP)] <- 3
+data$CROPDMGEXP[grep("[mM]",data$CROPDMGEXP)] <- 6
+data$CROPDMGEXP[grep("[bB]",data$CROPDMGEXP)] <- 9
+data$CROPDMGEXP <- as.numeric(data$CROPDMGEXP)
+# multiply CROPDMG by exponents in CROPDMGEXP
+data$CROPDMG <- data$CROPDMG * (10 ^ data$CROPDMGEXP)
+```
+
 
 Create a new dataset grouped by event type for the harmful effects to population health.
 We will use FATALITIES and INJURIES variables.
@@ -102,7 +127,7 @@ mostharmful %>%
      theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-![](Assignment_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+![](Assignment_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
 
 #### 2. Across the United States, which types of events have the greatest economic consequences?
@@ -114,30 +139,30 @@ mosteconomicdamage <- head(arrange(economicdamage, desc(total)), 10) %>% print
 
 ```
 ## # A tibble: 10 x 4
-##    EVTYPE             property    crop    total
-##    <chr>                 <dbl>   <dbl>    <dbl>
-##  1 TORNADO            2286231.  24353. 2310583.
-##  2 TSTM WIND           487441.  54124.  541565.
-##  3 THUNDERSTORM WINDS  446293.  18685.  464978.
-##  4 FLASH FLOOD         411087.  45445.  456532.
-##  5 HAIL                226423. 203670.  430093.
-##  6 FLOOD               217803.  44517.  262320.
-##  7 LIGHTNING           201038.   2134.  203172.
-##  8 HIGH WIND            72992.   5104.   78095.
-##  9 HEAVY SNOW           56390.   1836.   58225.
-## 10 HIGH WINDS           55625    1760.   57385.
+##    EVTYPE             property       crop        total
+##    <chr>                 <dbl>      <dbl>        <dbl>
+##  1 TORNADO        35916568264.  178048760 36094617024.
+##  2 FLOOD           9939354720  1436334050 11375688770 
+##  3 HURRICANE       8591011000  2236630000 10827641000 
+##  4 RIVER FLOOD     5118945500  5029459000 10148404500 
+##  5 ICE STORM       1004302040  5013448500  6017750540 
+##  6 FLASH FLOOD     4827942662.  511209100  5339151762.
+##  7 WINTER STORM    5287179401    26291000  5313470401 
+##  8 HAIL            3517514036. 1179220270  4696734306.
+##  9 DROUGHT          199460000  4157721000  4357181000 
+## 10 HURRICANE OPAL  3172846000    19000000  3191846000
 ```
 
 Again, we see **TORNADO** has the greatest economic damage.
 
 ```r
 mosteconomicdamage %>%
-     ggplot(aes(x = reorder(EVTYPE, -total), y = total, fill = EVTYPE)) + 
+     ggplot(aes(x = reorder(EVTYPE, -total), y = total/1000000, fill = EVTYPE)) + 
      geom_bar(stat="identity") + 
      ggtitle("Top 10 most damaging weather events to economy") +
      xlab("Event Type") + 
-     ylab("Total Economic Damage") +
+     ylab("Total Economic Damage ($millions)") +
      theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-![](Assignment_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+![](Assignment_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
